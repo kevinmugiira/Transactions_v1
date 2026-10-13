@@ -1,18 +1,21 @@
 package com.kevin.transactionPrac.Transactions.models;
 
 //import javax;
+import com.kevin.transactionPrac.Transactions.exceptions.InsufficientFundsException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.GenerationType;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 
 @Entity
+@Getter
 @Table(name = "accounts")
 public class Account {
 

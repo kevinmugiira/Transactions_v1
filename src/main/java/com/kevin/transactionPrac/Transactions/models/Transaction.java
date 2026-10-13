@@ -1,12 +1,16 @@
 package com.kevin.transactionPrac.Transactions.models;
 
 
-import sun.jvm.hotspot.debugger.cdbg.EnumType;
-import jakarta.persistent.*;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "transactions")
 public class Transaction {
 
