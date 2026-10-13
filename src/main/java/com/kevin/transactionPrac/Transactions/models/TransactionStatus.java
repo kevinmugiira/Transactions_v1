@@ -5,5 +5,5 @@ public enum TransactionStatus {
     PENDING,
     COMPLETED,
     FAILED,
-    REVERTED
+    REVERSED
 }
