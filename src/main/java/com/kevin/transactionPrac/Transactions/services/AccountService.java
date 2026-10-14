@@ -1,6 +1,7 @@
 package com.kevin.transactionPrac.Transactions.services;
 
 
+import com.kevin.transactionPrac.Transactions.dto.CreateAccountRequest;
 import com.kevin.transactionPrac.Transactions.exceptions.AccountNotFoundException;
 import com.kevin.transactionPrac.Transactions.models.Account;
 import com.kevin.transactionPrac.Transactions.repositories.AccountRepository;
