@@ -33,7 +33,7 @@ class TransactionsApplicationTests {
 
 	@Container
 	@ServiceConnection
-	static MySQLContainer<?> mysql = new MySQLContainer<>("8.4");
+	static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
 
 	@Autowired
     AccountService accountService;

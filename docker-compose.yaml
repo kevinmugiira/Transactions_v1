@@ -1,16 +1,16 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: shop-mysql
+    container_name: transactions-mysql
     environment:
-      MYSQL_DATABASE: TXN_PRACTICE
-#      MYSQL_USER: root
-#      MYSQL_PASSWORD: shop
+      MYSQL_DATABASE: txn_practice
+      MYSQL_USER: kevinM
+      MYSQL_PASSWORD: 104571252ASDqwe!@#$
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"
-#    volumes:
-#      - mysql_data:/var/lib/mysql
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
-#volumes:
-#  mysql_data:
+volumes:
+  mysql_data:
