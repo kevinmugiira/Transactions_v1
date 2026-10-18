@@ -19,38 +19,38 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TransferService {
 
-    private final AccountRepository accounts;
-    private final TransactionRepository transactions;
-
-    @Transactional
-    public Transaction transfer(TransferRequest req, String idempotencyKey) throws AccountNotFoundException {
-
-        //ensure the idempotency key is present and then retrieve it
-        if (idempotencyKey != null) {
-            var existing = transactions.findByIndempotencyKey(idempotencyKey);
-            if (existing.isPresent()) return existing.get();
-        }
-
-        if (req.sourceId().equals(req.targetId())) {
-            throw new IllegalArgumentException("Cannot transfer to the same account");
-        }
-
-        var locked = accounts.findAllByIdForUpdate(List.of(req.sourceId(), req.targetId()));
-        if (locked.size() != 2) throw new AccountNotFoundException();
-
-        Account source = (Account) locked.stream().filter(a -> a.getId().equals(req.sourceId()));
-        Account target = (Account) locked.stream().filter(a -> a.getId().equals(req.targetId()));
-
-        source.debit(req.amount());
-        target.credit(req.amount());
-
-        Transaction tx = new Transaction();
-        tx.setType(TransactionType.TRANSFER);
-        tx.setStatus(TransactionStatus.COMPLETED);
-        tx.setAmount(req.amount());
-        tx.setSourceAccountId(source.getId());
-        tx.setTargetAccountId(target.getId());
-        tx.setIdempotency_key(idempotencyKey);
-        return transactions.save(tx);
-    }
+//    private final AccountRepository accounts;
+//    private final TransactionRepository transactions;
+//
+//    @Transactional
+//    public Transaction transfer(TransferRequest req, String idempotencyKey) throws AccountNotFoundException {
+//
+//        //ensure the idempotency key is present and then retrieve it
+//        if (idempotencyKey != null) {
+//            var existing = transactions.findByIndempotencyKey(idempotencyKey);
+//            if (existing.isPresent()) return existing.get();
+//        }
+//
+//        if (req.sourceId().equals(req.targetId())) {
+//            throw new IllegalArgumentException("Cannot transfer to the same account");
+//        }
+//
+//        var locked = accounts.findAllByIdForUpdate(List.of(req.sourceId(), req.targetId()));
+//        if (locked.size() != 2) throw new AccountNotFoundException();
+//
+//        Account source = (Account) locked.stream().filter(a -> a.getId().equals(req.sourceId()));
+//        Account target = (Account) locked.stream().filter(a -> a.getId().equals(req.targetId()));
+//
+//        source.debit(req.amount());
+//        target.credit(req.amount());
+//
+//        Transaction tx = new Transaction();
+//        tx.setType(TransactionType.TRANSFER);
+//        tx.setStatus(TransactionStatus.COMPLETED);
+//        tx.setAmount(req.amount());
+//        tx.setSourceAccountId(source.getId());
+//        tx.setTargetAccountId(target.getId());
+//        tx.setIdempotency_key(idempotencyKey);
+//        return transactions.save(tx);
+//    }
 }
