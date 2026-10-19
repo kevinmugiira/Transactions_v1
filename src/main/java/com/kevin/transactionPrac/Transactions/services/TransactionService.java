@@ -122,7 +122,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public Optional<Transaction> findByIdempotencyKey(String key) {
-        return transactions.findByIndempotencyKey(key);
+        return transactions.findByIdempotencyKey(key);
     }
 
     @Transactional(readOnly = true)
@@ -139,7 +139,7 @@ public class TransactionService {
 
 
     private Optional<Transaction> findReplay(String key) {
-        return key == null ? Optional.empty() : transactions.findByIndempotencyKey(key);
+        return key == null ? Optional.empty() : transactions.findByIdempotencyKey(key);
     }
 
     private Account lockOne(Long id) {
