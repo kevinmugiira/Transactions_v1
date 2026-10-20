@@ -35,7 +35,7 @@ public class Transaction {
     private Long targetAccountId;
 
     @Column(name = "idempotency_key", length = 64)
-    private String idempotency_key;
+    private String idempotencyKey;
 
 
     private String description;
@@ -48,16 +48,19 @@ public class Transaction {
                        BigDecimal amount,
                        Long sourceAccountId,
                        Long targetAccountId,
-                       String idempotency_key,
+                       String idempotencyKey,
                        String description) {
         this.type = type;
         this.amount = amount;
         this.sourceAccountId = sourceAccountId;
         this.targetAccountId = targetAccountId;
-        this.idempotency_key = idempotency_key;
+        this.idempotencyKey = idempotencyKey;
         this.description = description;
         // PENDING/FAILED become useful once async processing is added
         this.status = TransactionStatus.COMPLETED;
     }
 
+    public Transaction() {
+
+    }
 }
