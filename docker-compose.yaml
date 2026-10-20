@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     container_name: transactions-mysql
     environment:
-      MYSQL_DATABASE: txn_practice
+      MYSQL_DATABASE: TXN_PRACTICE
       MYSQL_USER: kevinM
       MYSQL_PASSWORD: 104571252ASDqwe!@#$
       MYSQL_ROOT_PASSWORD: root

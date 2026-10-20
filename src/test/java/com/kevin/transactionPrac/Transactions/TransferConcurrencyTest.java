@@ -6,6 +6,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.junit.jupiter.api.Test;
 
 @SpringBootTest
-@TestContaiers
+//@TestContaiers
 public class TransferConcurrencyTest {
 }

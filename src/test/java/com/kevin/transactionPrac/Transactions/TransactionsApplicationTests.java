@@ -1,7 +1,8 @@
 package com.kevin.transactionPrac.Transactions;
 
 import com.kevin.transactionPrac.Transactions.dto.CreateAccountRequest;
-import com.kevin.transactionPrac.Transactions.dto.InsufficientFundsException;
+//import com.kevin.transactionPrac.Transactions.dto.InsufficientFundsException;
+import com.kevin.transactionPrac.Transactions.exceptions.InsufficientFundsException;
 import com.kevin.transactionPrac.Transactions.models.Account;
 import com.kevin.transactionPrac.Transactions.models.Transaction;
 import com.kevin.transactionPrac.Transactions.repositories.AccountRepository;
@@ -11,9 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -33,7 +37,21 @@ class TransactionsApplicationTests {
 
 	@Container
 	@ServiceConnection
-	static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
+	static MySQLContainer<?> mysql = new MySQLContainer<>(DockerImageName.parse("mysql/mysql-server:8.0")
+			.asCompatibleSubstituteFor("mysql"))
+			.withDatabaseName("TXN_PRACTICE")
+			.withUsername("myuser")
+			.withPassword("mypassword")
+			// FIX: Force MySQL to skip heavy disk-synchronization constraints on Linux Mint
+			.withCommand(
+					"--innodb-flush-method=nosync",
+					"--innodb-use-native-aio=0",
+					"--innodb-doublewrite=0",
+					"--sync-binlog=0"
+			)
+			// OPTIONAL: Prevent MySQL from running reverse DNS lookup checks inside your local network loop
+			.withEnv("MYSQL_ARGUMENTS", "--skip-name-resolve");
+
 
 	@Autowired
     AccountService accountService;
@@ -47,7 +65,10 @@ class TransactionsApplicationTests {
 
 	private Account newAccount(String name, String seed) {
 		Account a = accountService.create(new CreateAccountRequest(name, "KSH"));
-		txnService.deposit(a.getId(), new BigDecimal(seed), "seed", null);
+		BigDecimal amount = new BigDecimal(seed);
+		if (amount.signum() > 0) {
+			txnService.deposit(a.getId(), amount, "seed", null);
+		}
 		return a;
 	}
 
@@ -105,7 +126,7 @@ class TransactionsApplicationTests {
 		Account b = newAccount("Bramwel", "0");
 
 		assertThatThrownBy(() -> txnService.transfer(a.getId(), b.getId(), new BigDecimal("80"), null, null))
-				.isInstanceOf(InsufficientFundsException.class);
+				.isInstanceOf(com.kevin.transactionPrac.Transactions.exceptions.InsufficientFundsException.class);
 		assertThat(balanceOf(a.getId())).isEqualByComparingTo("50");
 		assertThat(balanceOf(b.getId())).isEqualByComparingTo("0");
 	}
