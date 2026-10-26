@@ -9,7 +9,9 @@ public record CreateAccountRequest(
         @Size(max = 100)
         String ownerName,
 
-        @Pattern(regexp = "[A-Z]{3}", message = "must be a three letter currency code like KSH")
+//        String ownerId,
+
+        @Pattern(regexp = "[A-Z]{3}", message = "must be a three letter currency code like KES")
         String currency
 ) {
 }

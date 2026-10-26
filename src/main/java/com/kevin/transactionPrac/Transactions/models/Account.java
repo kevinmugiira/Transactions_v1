@@ -18,6 +18,10 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** The user that owns this account: the "sub" claim of their JWT (a UUID from the auth service) */
+    @Column(name = "owner_id", length = 36)
+    private String ownerId;
+
     @Column(name = "owner_name", nullable = false)
     private String ownerName;
 
@@ -25,7 +29,7 @@ public class Account {
     private BigDecimal balance = BigDecimal.ZERO;
 
     @Column(nullable = false, length = 3)
-    private String currency = "KSH";
+    private String currency = "KES";
 
     // optimistic locking safety net. A stale update fails instead of silently overwriting.
     @Version
@@ -43,9 +47,14 @@ public class Account {
         the rest is added automatically.
       - A user can therefore not create an account with a custom id or balance
      */
-    public Account(String ownerName, String currency) {
+    public Account(String ownerId, String ownerName, String currency) {
+        this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.currency = currency;
+    }
+
+    public boolean isOwnedBy(String userId) {
+        return ownerId != null && ownerId.equals(userId);
     }
 
     public void debit(BigDecimal amount) {

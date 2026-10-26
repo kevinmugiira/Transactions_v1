@@ -1,9 +1,12 @@
+db:
+  name: TXN_PRACTICE
+
 spring:
   application:
     name: Transactions
 
   datasource:
-    url: jdbc:mysql://localhost:3306/TXN_PRACTICE
+    url: jdbc:mysql://localhost:3306/${db.name}
     username: kevin-m
     password: 104571252ASDqwe!@#$
 

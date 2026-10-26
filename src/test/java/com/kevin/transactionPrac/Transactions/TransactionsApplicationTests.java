@@ -12,8 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -28,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.beans.factory.annotation.Value;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
@@ -40,9 +39,9 @@ class TransactionsApplicationTests {
 	static MySQLContainer<?> mysql = new MySQLContainer<>(DockerImageName.parse("mysql/mysql-server:8.0")
 			.asCompatibleSubstituteFor("mysql"))
 			.withDatabaseName("TXN_PRACTICE")
-			.withUsername("myuser")
-			.withPassword("mypassword")
-			// FIX: Force MySQL to skip heavy disk-synchronization constraints on Linux Mint
+			.withUsername("dbUsername")
+			.withPassword("dbPassword")
+			// Force MySQL to skip heavy disk-synchronization constraints on Linux Mint
 			.withCommand(
 					"--innodb-flush-method=nosync",
 					"--innodb-use-native-aio=0",
@@ -64,7 +63,7 @@ class TransactionsApplicationTests {
 
 
 	private Account newAccount(String name, String seed) {
-		Account a = accountService.create(new CreateAccountRequest(name, "KSH"));
+		Account a = accountService.create(new CreateAccountRequest(name, "KES"));
 		BigDecimal amount = new BigDecimal(seed);
 		if (amount.signum() > 0) {
 			txnService.deposit(a.getId(), amount, "seed", null);
