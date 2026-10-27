@@ -12,7 +12,9 @@ import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-    Optional<Transaction> findByIdempotencyKey(String idempotency_key);
+    Optional<Transaction> findByInitiatedByAndIdempotencyKey(String initiatedBy, String idempotency_key);
+
+    Optional<Transaction> findByIdForUpdate(@Param("id") Long id);
 
     @Query("""
                 select t from Transaction t 

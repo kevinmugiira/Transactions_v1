@@ -20,12 +20,28 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+
+/**
+ * The "front door": checks who is asking, accepts the request quickly and records it as PENDING.
+ * It does NOT touch any balance. That is done later, asynchronously, by {@link TransactionProcessor}.
+ *
+ * In ONE database transaction this inserts the PENDING ledger row and an outbox row holding the
+ * command "process transaction N". Both commit together or not at all.
+ *
+ * Authorization rules:
+ *  - money can only LEAVE (withdraw, transfer) or ENTER via deposit an account its owner controls;
+ *    not even admins move customers' money
+ *  - a transfer may go INTO any existing account
+ *  - reads are allowed for the people involved, and for admins
+ */
+
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
 
     private final AccountRepository accounts;
     private final TransactionRepository transactions;
+    private final OutboxService outbox;
 
 
     @Transactional

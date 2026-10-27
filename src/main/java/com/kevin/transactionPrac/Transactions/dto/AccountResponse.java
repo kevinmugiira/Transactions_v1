@@ -7,6 +7,7 @@ import java.time.Instant;
 
 public record AccountResponse(
         Long id,
+        String ownerId,
         String ownerName,
         BigDecimal balance,
         String currency,
@@ -15,6 +16,7 @@ public record AccountResponse(
     public static AccountResponse from(Account a) {
         return new AccountResponse(
                 a.getId(),
+                a.getOwnerId(),
                 a.getOwnerName(),
                 a.getBalance(),
                 a.getCurrency(),
