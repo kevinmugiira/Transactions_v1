@@ -3,6 +3,7 @@ package com.kevin.transactionPrac.Transactions.services;
 
 import com.kevin.transactionPrac.Transactions.config.KafkaConfig;
 import com.kevin.transactionPrac.Transactions.exceptions.AccountNotFoundException;
+import com.kevin.transactionPrac.Transactions.exceptions.TransactionNotFoundException;
 import com.kevin.transactionPrac.Transactions.messaging.OutboxService;
 import com.kevin.transactionPrac.Transactions.models.Account;
 import com.kevin.transactionPrac.Transactions.models.Transaction;
@@ -10,12 +11,13 @@ import com.kevin.transactionPrac.Transactions.models.TransactionType;
 import com.kevin.transactionPrac.Transactions.repositories.AccountRepository;
 import com.kevin.transactionPrac.Transactions.repositories.TransactionRepository;
 import com.kevin.transactionPrac.Transactions.security.Caller;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+//import java.awt.print.Pageable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,7 @@ public class TransactionService {
     private final OutboxService outbox;
 
 
+    @Transactional
     public Submission submitDeposit(
             Caller caller,
             Long accountId,
@@ -58,6 +61,32 @@ public class TransactionService {
             String idempotencyKey
     ) {
         return submit(caller, TransactionType.DEPOSIT, amount, null, accountId, description, idempotencyKey);
+    }
+
+    @Transactional
+    public Submission submitWithdrawal(
+            Caller caller,
+            Long accountId,
+            BigDecimal amount,
+            String description,
+            String idempotencyKey
+    ) {
+        return submit(caller, TransactionType.WITHDRWAL, amount, null, accountId, description, idempotencyKey);
+    }
+
+    @Transactional
+    public Submission submitTransfer(
+            Caller caller,
+            Long sourceId,
+            Long targetId,
+            BigDecimal amount,
+            String description,
+            String idempotencyKey
+    ) {
+        if (sourceId.equals(targetId)) {
+            throw new IllegalArgumentException("cannot transfer from the same account!");
+        }
+        return submit(caller, TransactionType.TRANSFER, amount, sourceId, targetId, description, idempotencyKey);
     }
 
     private Submission submit(
@@ -121,6 +150,39 @@ public class TransactionService {
         if (!account.isOwnedBy(caller.userId())) {
             throw new AccountNotFoundException(accountId);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Transaction get(Long id, Caller caller) {
+        Transaction tx = transactions
+                .findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id))
+        ;
+        boolean involved = ownsAccount(
+                tx.getSourceAccountId(),
+                caller.userId()) || ownsAccount(tx.getTargetAccountId(),
+                caller.userId())
+        ;
+        if (!caller.admin() && !involved) {
+            throw new TransactionNotFoundException(id);
+        }
+        return tx;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Transaction> history(Long accountId, Caller caller, Pageable pageable) {
+        Account account = accounts.findById(accountId).orElseThrow(() -> new AccountNotFoundException(accountId));
+        if (!caller.admin() && !account.isOwnedBy(caller.userId())) {
+            throw new AccountNotFoundException(accountId);
+        }
+        return transactions.findHistory(accountId, pageable);
+    }
+
+    private boolean ownsAccount(Long accountId, String userId) {
+        return accountId != null && accounts
+                .findById(accountId)
+                .map(a -> a.isOwnedBy(userId)).orElse(false)
+        ;
     }
 
 
