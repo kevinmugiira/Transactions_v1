@@ -1,6 +1,7 @@
 package com.kevin.transactionPrac.Transactions.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.kevin.events.Topics;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,11 +45,19 @@ public class KafkaConfig {
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
-                template, (record, exception) -> new TopicPartition(COMMANDS_DLT, -1));
-        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));
+                template,
+                (
+                        record,
+                        exception
+                ) -> new TopicPartition(COMMANDS_DLT, -1));
+
+        DefaultErrorHandler handler = new DefaultErrorHandler(
+                recoverer,
+                new FixedBackOff(1000L, 3L)
+        );
+
         handler.addNotRetryableExceptions(NumberFormatException.class);
         return handler;
-        )
     }
 
 

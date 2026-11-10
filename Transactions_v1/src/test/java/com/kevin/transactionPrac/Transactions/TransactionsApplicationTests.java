@@ -6,7 +6,9 @@ import com.kevin.transactionPrac.Transactions.exceptions.InsufficientFundsExcept
 import com.kevin.transactionPrac.Transactions.models.Account;
 import com.kevin.transactionPrac.Transactions.models.Transaction;
 import com.kevin.transactionPrac.Transactions.repositories.AccountRepository;
+import com.kevin.transactionPrac.Transactions.security.Caller;
 import com.kevin.transactionPrac.Transactions.services.AccountService;
+import com.kevin.transactionPrac.Transactions.services.Submission;
 import com.kevin.transactionPrac.Transactions.services.TransactionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+//import static com.kevin.transactionPrac.Transactions.AsyncTransactionFlowTest.ALICE;
+//import static com.kevin.transactionPrac.Transactions.AsyncTransactionFlowTest.BOB;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.beans.factory.annotation.Value;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,6 +36,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @Testcontainers
 class TransactionsApplicationTests {
+
+
+	private static final Caller ALICE = new Caller("alice", false);
+	private static final Caller BOB = new Caller("bob", false);
 
 
 	@Container
@@ -62,11 +70,11 @@ class TransactionsApplicationTests {
     AccountRepository accountRepo;
 
 
-	private Account newAccount(String name, String seed) {
-		Account a = accountService.create(new CreateAccountRequest(name, "KES"));
+	private Account newAccount(Caller owner, String name, String seed) {
+		Account a = accountService.create(new CreateAccountRequest(name, "KES"), owner);
 		BigDecimal amount = new BigDecimal(seed);
 		if (amount.signum() > 0) {
-			txnService.deposit(a.getId(), amount, "seed", null);
+			txnService.submitDeposit(owner, a.getId(), amount, "seed", null);
 		}
 		return a;
 	}
@@ -78,8 +86,8 @@ class TransactionsApplicationTests {
 
 	@Test
 	void parallelTransfersInBothDirectionsKeepTotalConstant() throws Exception {
-		Account a = newAccount("Alice", "1000");
-		Account b = newAccount("Bob", "1000");
+		Account a = newAccount(ALICE,"Alice", "1000");
+		Account b = newAccount(BOB,"Bob", "1000");
 
 		ExecutorService pool = Executors.newFixedThreadPool(16);
 		List<Future<?>> futures = new ArrayList<>();
@@ -88,9 +96,9 @@ class TransactionsApplicationTests {
 			boolean forward = w % 2 == 0;
 			futures.add(pool.submit(() -> {
 				if (forward) {
-					txnService.transfer(a.getId(), b.getId(), new BigDecimal("5"), null, null);
+					txnService.submitTransfer(ALICE, a.getId(), b.getId(), new BigDecimal("5"), null, null);
 				} else {
-					txnService.transfer(b.getId(), a.getId(), new BigDecimal("3"), null, null);
+					txnService.submitTransfer(BOB, b.getId(), a.getId(), new BigDecimal("3"), null, null);
 				}
 			}));
 		}
@@ -108,23 +116,25 @@ class TransactionsApplicationTests {
 
 	@Test
 	void sameIdempotencyKeyOnlyMovesMoneyOnce() {
-		Account c = newAccount("Allan", "100");
-		Account d = newAccount("Deny", "0");
+		Account c = newAccount(ALICE,"Allan", "100");
+		Account d = newAccount(BOB,"Deny", "0");
 
-        Transaction first = txnService.transfer(c.getId(), d.getId(), new BigDecimal("40"), null, "key-123");
-		Transaction second = txnService.transfer(c.getId(), d.getId(), new BigDecimal("40"), null, "key-123");
+        Submission first = txnService.submitTransfer(ALICE, c.getId(), d.getId(), new BigDecimal("40"), null, "key-123");
+		Submission second = txnService.submitTransfer(BOB, c.getId(), d.getId(), new BigDecimal("40"), null, "key-123");
 
-		assertThat(second.getId()).isEqualTo(first.getId());
+		assertThat(first.replayed()).isFalse();
+		assertThat(second.replayed()).isTrue();
+//		assertThat(second.getId()).isEqualTo(first.getId());
 		assertThat(balanceOf(c.getId())).isEqualByComparingTo("60");
 		assertThat(balanceOf(d.getId())).isEqualByComparingTo("40");
 	}
 
 	@Test
 	void overDraftIsRejectedAndNothingChanges() {
-		Account a = newAccount("Underson", "50");
-		Account b = newAccount("Bramwel", "0");
+		Account a = newAccount(ALICE,"Underson", "50");
+		Account b = newAccount(BOB, "Bramwel", "0");
 
-		assertThatThrownBy(() -> txnService.transfer(a.getId(), b.getId(), new BigDecimal("80"), null, null))
+		assertThatThrownBy(() -> txnService.submitTransfer(ALICE, a.getId(), b.getId(), new BigDecimal("80"), null, null))
 				.isInstanceOf(com.kevin.transactionPrac.Transactions.exceptions.InsufficientFundsException.class);
 		assertThat(balanceOf(a.getId())).isEqualByComparingTo("50");
 		assertThat(balanceOf(b.getId())).isEqualByComparingTo("0");
