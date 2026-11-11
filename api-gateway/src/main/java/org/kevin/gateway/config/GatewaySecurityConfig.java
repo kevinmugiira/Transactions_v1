@@ -13,6 +13,12 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 
 
+/**
+ * The gateway is the front door. It rejects anything without a valid, non-revoked token BEFORE the
+ * request reaches a service. Valid requests are forwarded with their Authorization header untouched,
+ * and each service verifies the token again for itself.
+ */
+
 public class GatewaySecurityConfig {
 
     @Bean

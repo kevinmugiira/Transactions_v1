@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Login, registration and token handling. Throttled per client IP to slow down password guessing.
+            - id: auth-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+              # Accounts and money movements. Throttled per logged-in user.
+            - id: transaction-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/api/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+
+app:
+  jwt:
+    # Public keys are fetched lazily, so the gateway can start before the auth service
+    jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+    issuer: bank-auth
+
